@@ -7,11 +7,13 @@ function init() {
 }
 
 function exit_success() {
+    echo
     echo "SUCCESS."
     exit 0
 }
 
 function exit_error() {
+    echo
     echo "ERROR:" "$@"
     exit 1
 }
