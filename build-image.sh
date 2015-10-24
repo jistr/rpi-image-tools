@@ -39,7 +39,7 @@ function query_sizes() {
 
     if [ "${RPI_ROOT_SIZE:-}" = "" ]; then
         echo "Note: Root partition should be big enough for the contents of the original root fs."
-        echo -n "Enter size of the root partition (MB): "
+        echo -n "Enter size of the root partition (MB), or 'e' to expand to fit the image: "
         read RPI_ROOT_SIZE
     fi
 
@@ -57,6 +57,9 @@ function build_resized_image() {
         swap_part=( --delete /dev/sda2 )
     fi
     local root_part=( --resize "/dev/sda3=${RPI_ROOT_SIZE}M" )
+    if [ "$RPI_ROOT_SIZE" = "e" ]; then
+        root_part=( --expand /dev/sda3 )
+    fi
 
     echo "Creating space for the new image..."
     truncate -s "${RPI_IMAGE_SIZE}M" "$OUT_IMAGE_TMP_PATH"
