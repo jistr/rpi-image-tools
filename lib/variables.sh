@@ -11,3 +11,6 @@ OS_IMAGE_PATH="$SOURCE_DIR/os/$(basename -s .xz "$OS_IMAGE_PATH_COMPRESSED")"
 
 FIRMWARE_PATH_COMPRESSED="$SOURCE_DIR/firmware/$(basename "$RPI_FIRMWARE_URL")"
 FIRMWARE_PATH="$SOURCE_DIR/firmware/firmware-$(basename -s .tar.gz "$FIRMWARE_PATH_COMPRESSED")"
+
+OUT_IMAGE_PATH="$OUTPUT_DIR/rpi-$(basename "$OS_IMAGE_PATH")"
+OUT_IMAGE_TMP_PATH="$OUT_IMAGE_PATH.unfinished"
