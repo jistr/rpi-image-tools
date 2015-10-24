@@ -48,6 +48,11 @@ function query_sizes() {
         echo -n "Enter size of the whole image (MB): "
         read RPI_IMAGE_SIZE
     fi
+
+    ROOT_PARTITION_NUM=3
+    if [ "$RPI_SWAP_SIZE" = "n" ]; then
+        ROOT_PARTITION_NUM=2
+    fi
 }
 
 function build_resized_image() {
@@ -67,11 +72,28 @@ function build_resized_image() {
     virt-resize "${boot_part[@]}" "${swap_part[@]}" "${root_part[@]}" "$OS_IMAGE_PATH" "$OUT_IMAGE_TMP_PATH"
 }
 
+function make_boot_vfat() {
+    echo "Formatting boot as vfat..."
+    OLD_BOOT_FS_UUID=$(virt-filesystems -a "$OUT_IMAGE_TMP_PATH" -l --uuid | grep /dev/sda1 | awk '{ print $7 }')
+
+    guestfish -a "$OUT_IMAGE_TMP_PATH" run : mkfs vfat /dev/sda1
+
+    BOOT_FS_UUID=$(virt-filesystems -a "$OUT_IMAGE_TMP_PATH" -l --uuid | grep /dev/sda1 | awk '{ print $7 }')
+}
+
 function amend_fstab() {
+    echo "Amending boot partition UUID in fstab..."
+    virt-edit -a "$OUT_IMAGE_TMP_PATH" /etc/fstab -e "s/$OLD_BOOT_FS_UUID/$BOOT_FS_UUID/" 2>&1 | sed -e 's/.*libguestfs: error: findfs_uuid.*//'
+
     if [ "$RPI_SWAP_SIZE" = "n" ]; then
         echo "Removing swap from fstab..."
         virt-edit -a "$OUT_IMAGE_TMP_PATH" /etc/fstab -e 's/^.*swap.*swap.*$//' 2>&1 | sed -e 's/.*libguestfs: error: findfs_uuid.*//'
     fi
+}
+
+function set_fs_labels() {
+    echo "Setting filesystem labels..."
+    guestfish -a "$OUT_IMAGE_TMP_PATH" run : set-label /dev/sda1 boot : set-label /dev/sda${ROOT_PARTITION_NUM} root
 }
 
 function install_firmware() {
@@ -89,13 +111,8 @@ function install_firmware() {
 function configure_boot() {
     echo "Writing /boot/cmdline.txt and /boot/config.txt (use virt-edit to customize later)..."
 
-    local root_partition=3
-    if [ "$RPI_SWAP_SIZE" = "n" ]; then
-        root_partition=2
-    fi
-
     virt-customize -a "$OUT_IMAGE_TMP_PATH" \
-                   --write "/boot/cmdline.txt:dwc_otg.lpm_enable=0 console=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p${root_partition} rootfstype=ext4 elevator=deadline rootwait" \
+                   --write "/boot/cmdline.txt:dwc_otg.lpm_enable=0 console=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p${ROOT_PARTITION_NUM} rootfstype=ext4 elevator=deadline rootwait" \
                    --write '/boot/config.txt:disable_overscan=1
 hdmi_force_hotplug=1
 hdmi_group=1
@@ -123,11 +140,12 @@ print_partition_assumptions
 
 query_sizes
 build_resized_image
+make_boot_vfat
 amend_fstab
+set_fs_labels
 install_firmware
 configure_boot
 make_bootable
-
 finalize
 
 echo
