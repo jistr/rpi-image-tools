@@ -83,6 +83,22 @@ function install_firmware() {
     virt-copy-in -a "$OUT_IMAGE_TMP_PATH" "${modules_files[@]}" /lib/modules
 }
 
+function configure_boot() {
+    echo "Writing /boot/cmdline.txt and /boot/config.txt (use virt-edit to customize later)..."
+
+    local root_partition=3
+    if [ "$RPI_SWAP_SIZE" = "n" ]; then
+        root_partition=2
+    fi
+
+    virt-customize -a "$OUT_IMAGE_TMP_PATH" \
+                   --write "/boot/cmdline.txt:dwc_otg.lpm_enable=0 console=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p${root_partition} rootfstype=ext4 elevator=deadline rootwait" \
+                   --write '/boot/config.txt:disable_overscan=1
+hdmi_force_hotplug=1
+hdmi_group=1
+hdmi_mode=16'
+}
+
 function make_bootable() {
     echo "Making /dev/sda1 bootable..."
     guestfish -a "$OUT_IMAGE_TMP_PATH" run : part-set-bootable /dev/sda 1 true
@@ -106,6 +122,7 @@ query_sizes
 build_resized_image
 amend_fstab
 install_firmware
+configure_boot
 make_bootable
 
 finalize
