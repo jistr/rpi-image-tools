@@ -67,7 +67,7 @@ function build_resized_image() {
 function amend_fstab() {
     if [ "$RPI_SWAP_SIZE" = "n" ]; then
         echo "Removing swap from fstab..."
-        virt-edit -a "$OUT_IMAGE_TMP_PATH" /etc/fstab -e 's/^.*swap.*swap.*$//'
+        virt-edit -a "$OUT_IMAGE_TMP_PATH" /etc/fstab -e 's/^.*swap.*swap.*$//' 2>&1 | sed -e 's/.*libguestfs: error: findfs_uuid.*//'
     fi
 }
 
