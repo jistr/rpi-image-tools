@@ -7,17 +7,13 @@ function init() {
 }
 
 function exit_success() {
-    print_stderr "SUCCESS."
+    echo "SUCCESS."
     exit 0
 }
 
 function exit_error() {
-    print_stderr "ERROR:" "$@"
+    echo "ERROR:" "$@"
     exit 1
-}
-
-function print_stderr() {
-    echo "$@" > /dev/fd/2
 }
 
 function make_resource_and_output_dirs() {
