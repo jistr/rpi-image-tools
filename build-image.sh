@@ -124,6 +124,16 @@ function make_bootable() {
     guestfish -a "$OUT_IMAGE_TMP_PATH" run : part-set-bootable /dev/sda 1 true
 }
 
+function enable_ttyama0_getty() {
+    echo "Enabling getty on ttyAMA0..."
+    guestfish -i -a "$OUT_IMAGE_TMP_PATH" ln-s /lib/systemd/system/serial-getty@.service /etc/systemd/system/getty.target.wants/getty@ttyAMA0.service
+}
+
+function disable_initial_setup() {
+    echo "Disabling initial-setup-text service..."
+    guestfish -i -a "$OUT_IMAGE_TMP_PATH" rm /etc/systemd/system/multi-user.target.wants/initial-setup-text.service
+}
+
 function finalize() {
     echo "Finalizing..."
     mv "$OUT_IMAGE_TMP_PATH" "$OUT_IMAGE_PATH"
@@ -146,6 +156,8 @@ set_fs_labels
 install_firmware
 configure_boot
 make_bootable
+enable_ttyama0_getty
+disable_initial_setup
 finalize
 
 echo
