@@ -7,6 +7,8 @@ source "$BIN_DIR/lib/common.sh"
 source "$BIN_DIR/lib/variables.sh"
 
 function assert_build_preconditions() {
+    which guestfish || exit_error "Please install libguestfs-tools."
+
     if [ -e "$OUT_IMAGE_PATH" ]; then
         exit_error "Output file $OUT_IMAGE_PATH already exists, aborting."
     fi
