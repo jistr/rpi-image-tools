@@ -26,7 +26,7 @@ function print_partition_assumptions() {
     echo -e "\nThis tool assumes sda1 = boot, sda2 = swap, sda3 = root fs\n"
 }
 
-function query_sizes() {
+function query_parameters() {
     if [ "${RPI_BOOT_SIZE:-}" = "" ]; then
         echo -n "Enter size of the boot partition (MB): "
         read RPI_BOOT_SIZE
@@ -47,6 +47,11 @@ function query_sizes() {
         echo "Note: Image size should be at least slightly larger than the sum of all partitions."
         echo -n "Enter size of the whole image (MB): "
         read RPI_IMAGE_SIZE
+    fi
+
+    if [ "${RPI_ROOT_PASSWORD:-}" = "" ]; then
+        echo -n "Enter root password (for the built image, not this machine's): "
+        read RPI_ROOT_PASSWORD
     fi
 
     ROOT_PARTITION_NUM=3
@@ -134,6 +139,12 @@ function disable_initial_setup() {
     guestfish -i -a "$OUT_IMAGE_TMP_PATH" rm /etc/systemd/system/multi-user.target.wants/initial-setup-text.service
 }
 
+function set_root_password() {
+    echo "Setting root password..."
+    #local hashed_root_password=openssl passwd -1 -salt $(openssl rand -base64 5) -stdin <<< "$RPI_ROOT_PASSWORD"
+    virt-customize -a "$OUT_IMAGE_TMP_PATH" --root-password file:<( echo "$RPI_ROOT_PASSWORD" )
+}
+
 function finalize() {
     echo "Finalizing..."
     mv "$OUT_IMAGE_TMP_PATH" "$OUT_IMAGE_PATH"
@@ -148,7 +159,7 @@ echo "Filesystems and partitions in the original OS image:"
 print_filesystems_and_partitions "$OS_IMAGE_PATH"
 print_partition_assumptions
 
-query_sizes
+query_parameters
 build_resized_image
 make_boot_vfat
 amend_fstab
@@ -158,6 +169,7 @@ configure_boot
 make_bootable
 enable_ttyama0_getty
 disable_initial_setup
+set_root_password
 finalize
 
 echo
