@@ -79,9 +79,9 @@ Q & A
     image with 3 partitions - sda1 is boot, sda2 is swap, sda3 is
     root.
 
-  * The `RPI_FIRMWARE_URL` points to a .tar.gz archive of a specific
+  * The `RPI_FIRMWARE_URL` points to a .tar.gz archive of some
     commit in the GitHub Raspberry Pi firmware repository. The tool
-    relies on the internal structure of such an archive.
+    relies on the internal structure of these archives.
 
 * *Can parameters be passed into ./build-image.sh instead of asking
   for user input?*
