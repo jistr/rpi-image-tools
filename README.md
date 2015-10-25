@@ -9,25 +9,25 @@ Usage
 
 * Clone and `cd`.
 
-```bash
-git clone https://github.com/jistr/rpi-image-tools
-cd rpi-image-tools
-```
+  ```bash
+  git clone https://github.com/jistr/rpi-image-tools
+  cd rpi-image-tools
+  ```
 
 * Download the sources (Fedora ARMv7 minimal image, RPi
   firmware). They'll be downloaded into `rpi-image-sources` directory.
 
-```bash
-./download-sources.sh
-```
+  ```bash
+  ./download-sources.sh
+  ```
 
 * Build the image. You'll be prompted for image and partition sizes,
   and a root password (the root password for the image, not your
   workstation's root password).
 
-```bash
-./build-image.sh
-```
+  ```bash
+  ./build-image.sh
+  ```
 
 * That's it! The generated image is in the `rpi-image-output`
   directory. You can `dd` it onto an SD card.
@@ -51,9 +51,9 @@ Q & A
   * Changes the boot partition from ext3 to vfat (as required by the
     Pi) and amends `/etc/fstab` accordingly.
 
-  * Installs the Raspberry Pi firmware.
+  * Installs the Raspberry Pi firmware (kernel, modules etc.).
 
-  * Configures a very basic `/boot/cmdline.txt` and
+  * Configures very basic `/boot/cmdline.txt` and
     `/boot/config.txt`.
 
   * Enables getty on the serial console breakout pins.
