@@ -90,6 +90,9 @@ function amend_fstab() {
     echo "Amending boot partition UUID in fstab..."
     virt-edit -a "$OUT_IMAGE_TMP_PATH" /etc/fstab -e "s/$OLD_BOOT_FS_UUID/$BOOT_FS_UUID/" 2>&1 | sed -e 's/.*libguestfs: error: findfs_uuid.*//'
 
+    echo "Amending boot partition type in fstab..."
+    virt-edit -a "$OUT_IMAGE_TMP_PATH" /etc/fstab -e 's/(\/boot\s*)ext3/\1vfat/' 2>&1 | sed -e 's/.*libguestfs: error: findfs_uuid.*//'
+
     if [ "$RPI_SWAP_SIZE" = "n" ]; then
         echo "Removing swap from fstab..."
         virt-edit -a "$OUT_IMAGE_TMP_PATH" /etc/fstab -e 's/^.*swap.*swap.*$//' 2>&1 | sed -e 's/.*libguestfs: error: findfs_uuid.*//'
