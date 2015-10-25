@@ -101,7 +101,7 @@ function amend_fstab() {
 
 function set_fs_labels() {
     echo "Setting filesystem labels..."
-    guestfish -a "$OUT_IMAGE_TMP_PATH" run : set-label /dev/sda1 boot : set-label /dev/sda${ROOT_PARTITION_NUM} root
+    guestfish -a "$OUT_IMAGE_TMP_PATH" run : set-label /dev/sda1 rpiboot : set-label /dev/sda${ROOT_PARTITION_NUM} rpiroot
 }
 
 function install_firmware() {
