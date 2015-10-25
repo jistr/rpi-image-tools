@@ -76,7 +76,7 @@ function make_boot_vfat() {
     echo "Formatting boot as vfat..."
     OLD_BOOT_FS_UUID=$(virt-filesystems -a "$OUT_IMAGE_TMP_PATH" -l --uuid | grep /dev/sda1 | awk '{ print $7 }')
 
-    guestfish -a "$OUT_IMAGE_TMP_PATH" run : mkfs vfat /dev/sda1
+    guestfish -a "$OUT_IMAGE_TMP_PATH" run : mkfs vfat /dev/sda1 : part-set-mbr-id /dev/sda 1 0x0b
 
     BOOT_FS_UUID=$(virt-filesystems -a "$OUT_IMAGE_TMP_PATH" -l --uuid | grep /dev/sda1 | awk '{ print $7 }')
 }
