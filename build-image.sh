@@ -146,7 +146,6 @@ function disable_initial_setup() {
 
 function set_root_password() {
     echo "Setting root password..."
-    #local hashed_root_password=openssl passwd -1 -salt $(openssl rand -base64 5) -stdin <<< "$RPI_ROOT_PASSWORD"
     virt-customize -a "$OUT_IMAGE_TMP_PATH" --root-password file:<( echo "$RPI_ROOT_PASSWORD" )
 }
 
