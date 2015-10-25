@@ -180,4 +180,7 @@ echo
 echo "Filesystems and partitions in the built image:"
 print_filesystems_and_partitions "$OUT_IMAGE_PATH"
 
+echo
+echo "The built image is at $OUT_IMAGE_PATH"
+
 exit_success
