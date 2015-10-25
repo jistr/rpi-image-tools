@@ -7,7 +7,7 @@ source "$BIN_DIR/lib/common.sh"
 source "$BIN_DIR/lib/variables.sh"
 
 function assert_build_preconditions() {
-    which guestfish || exit_error "Please install libguestfs-tools."
+    which guestfish &> /dev/null || exit_error "Please install libguestfs-tools."
 
     if [ -e "$OUT_IMAGE_PATH" ]; then
         exit_error "Output file $OUT_IMAGE_PATH already exists, aborting."
@@ -30,30 +30,30 @@ function print_partition_assumptions() {
 
 function query_parameters() {
     if [ "${RPI_BOOT_SIZE:-}" = "" ]; then
-        echo -n "Enter size of the boot partition (MB): "
+        echo -n "Enter new size of the boot partition (MB): "
         read RPI_BOOT_SIZE
     fi
 
     if [ "${RPI_SWAP_SIZE:-}" = "" ]; then
-        echo -n "Enter size of the swap partition (MB), or 'n' build an image without swap: "
+        echo -n "Enter new size of the swap partition (MB), or 'n' to build an image without swap: "
         read RPI_SWAP_SIZE
     fi
 
     if [ "${RPI_ROOT_SIZE:-}" = "" ]; then
         echo "Note: Root partition should be big enough for the contents of the original root fs."
-        echo -n "Enter size of the root partition (MB), or 'e' to expand to fit the image: "
+        echo -n "Enter new size of the root partition (MB), or 'e' to expand to fit the image: "
         read RPI_ROOT_SIZE
     fi
 
     if [ "${RPI_IMAGE_SIZE:-}" = "" ]; then
         echo "Note: Image size should be at least slightly larger than the sum of all partitions."
-        echo -n "Enter size of the whole image (MB): "
+        echo -n "Enter new size of the whole image (MB): "
         read RPI_IMAGE_SIZE
     fi
 
     if [ "${RPI_ROOT_PASSWORD:-}" = "" ]; then
         echo -n "Enter root password (for the built image, not this machine's): "
-        read RPI_ROOT_PASSWORD
+        read -s RPI_ROOT_PASSWORD
     fi
 
     ROOT_PARTITION_NUM=3
