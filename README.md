@@ -2,7 +2,7 @@ rpi-image-tools
 ===============
 
 Turns a Fedora ARMv7 minimal image into an image bootable on Raspberry
-Pi 2.
+Pi 3.
 
 Usage
 -----
@@ -57,6 +57,8 @@ Q & A
     `/boot/config.txt`.
 
   * Enables getty on the serial console breakout pins.
+
+  * Disables auditd (RPi kernels don't have audit support).
 
   * Sets a root password and disables initial-setup app.
 

@@ -93,7 +93,7 @@ function amend_fstab() {
     virt-edit -a "$OUT_IMAGE_TMP_PATH" /etc/fstab -e "s/$OLD_BOOT_FS_UUID/$BOOT_FS_UUID/" 2>&1 | sed -e 's/.*libguestfs: error: findfs_uuid.*//'
 
     echo "Amending boot partition type in fstab..."
-    virt-edit -a "$OUT_IMAGE_TMP_PATH" /etc/fstab -e 's/(\/boot\s*)ext3/\1vfat/' 2>&1 | sed -e 's/.*libguestfs: error: findfs_uuid.*//'
+    virt-edit -a "$OUT_IMAGE_TMP_PATH" /etc/fstab -e 's/(\/boot\s*)ext4/\1vfat/' 2>&1 | sed -e 's/.*libguestfs: error: findfs_uuid.*//'
 
     if [ "$RPI_SWAP_SIZE" = "n" ]; then
         echo "Removing swap from fstab..."
@@ -122,8 +122,9 @@ function configure_boot() {
     echo "Writing /boot/cmdline.txt and /boot/config.txt (use virt-edit to customize later)..."
 
     virt-customize -a "$OUT_IMAGE_TMP_PATH" \
-                   --write "/boot/cmdline.txt:dwc_otg.lpm_enable=0 console=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p${ROOT_PARTITION_NUM} rootfstype=ext4 elevator=deadline rootwait" \
-                   --write '/boot/config.txt:disable_overscan=1
+                   --write "/boot/cmdline.txt:dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/mmcblk0p${ROOT_PARTITION_NUM} rootfstype=ext4 elevator=deadline rootwait" \
+                   --write '/boot/config.txt:enable_uart=1
+disable_overscan=1
 hdmi_force_hotplug=1
 hdmi_group=1
 hdmi_mode=16'
@@ -134,14 +135,20 @@ function make_bootable() {
     guestfish -a "$OUT_IMAGE_TMP_PATH" run : part-set-bootable /dev/sda 1 true
 }
 
-function enable_ttyama0_getty() {
-    echo "Enabling getty on ttyAMA0..."
-    guestfish -i -a "$OUT_IMAGE_TMP_PATH" ln-s /lib/systemd/system/serial-getty@.service /etc/systemd/system/getty.target.wants/getty@ttyAMA0.service
+function enable_serial0_getty() {
+    echo "Enabling getty on serial0..."
+    guestfish -i -a "$OUT_IMAGE_TMP_PATH" ln-s /lib/systemd/system/serial-getty@.service /etc/systemd/system/getty.target.wants/getty@serial0.service
 }
 
 function disable_initial_setup() {
-    echo "Disabling initial-setup-text service..."
-    guestfish -i -a "$OUT_IMAGE_TMP_PATH" rm /etc/systemd/system/multi-user.target.wants/initial-setup-text.service
+    echo "Disabling initial-setup service..."
+    guestfish -i -a "$OUT_IMAGE_TMP_PATH" rm /etc/systemd/system/multi-user.target.wants/initial-setup.service
+}
+
+function disable_auditd() {
+    echo "Disabling auditd service..."
+    # audit support is disabled in RPi kernels
+    guestfish -i -a "$OUT_IMAGE_TMP_PATH" rm /etc/systemd/system/multi-user.target.wants/auditd.service
 }
 
 function set_root_password() {
@@ -171,7 +178,8 @@ set_fs_labels
 install_firmware
 configure_boot
 make_bootable
-enable_ttyama0_getty
+enable_serial0_getty
+disable_auditd
 disable_initial_setup
 set_root_password
 finalize
