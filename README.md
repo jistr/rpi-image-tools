@@ -62,6 +62,9 @@ Q & A
 
   * Sets a root password and disables initial-setup app.
 
+  * Installs WiFi firmware when building for RPi 3 (it's non-free, not
+    shipped with Fedora).
+
   For a complete list of changes, read the source (it's not too long).
 
 * *Why disable the initial-setup app?*
@@ -88,8 +91,9 @@ Q & A
 * *Can parameters be passed into ./build-image.sh instead of asking
   for user input?*
 
-  Yes, use `RPI_BOOT_SIZE`, `RPI_SWAP_SIZE`, `RPI_ROOT_SIZE`,
-  `RPI_IMAGE_SIZE`, and `RPI_ROOT_PASSWORD` environment variables.
+  Yes, use `RPI_MODEL`, `RPI_BOOT_SIZE`, `RPI_SWAP_SIZE`,
+  `RPI_ROOT_SIZE`, `RPI_IMAGE_SIZE`, and `RPI_ROOT_PASSWORD`
+  environment variables.
 
 * *Do the scripts have to be run as root?*
 

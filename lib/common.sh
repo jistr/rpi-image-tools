@@ -22,7 +22,7 @@ function make_resource_and_output_dirs() {
     local dirs=(
         "$SOURCE_DIR"
         "$SOURCE_DIR/os"
-        "$SOURCE_DIR/firmware"
+        "$BRCM_WIFI_FIRMWARE_DIR"
         "$OUTPUT_DIR"
     )
     for dir in ${dirs[@]}; do

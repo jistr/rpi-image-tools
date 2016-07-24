@@ -29,6 +29,14 @@ function print_partition_assumptions() {
 }
 
 function query_parameters() {
+    if [ "${RPI_MODEL:-}" = "" ]; then
+        echo -n "Enter model of the target RPi (2 or 3): "
+        read RPI_MODEL
+    fi
+    if [ "${RPI_MODEL:-}" != "2" -a "${RPI_MODEL:-}" != "3" ]; then
+        exit_error "Unsupported RPi model '$RPI_MODEL'."
+    fi
+
     if [ "${RPI_BOOT_SIZE:-}" = "" ]; then
         echo -n "Enter new size of the boot partition (MB): "
         read RPI_BOOT_SIZE
@@ -156,6 +164,19 @@ function set_root_password() {
     virt-customize -a "$OUT_IMAGE_TMP_PATH" --root-password file:<( echo "$RPI_ROOT_PASSWORD" )
 }
 
+function install_wifi_firmware() {
+    echo "Installing WiFi firmware..."
+    virt-customize -a "$OUT_IMAGE_TMP_PATH" \
+                   --upload "$BRCM_WIFI_FIRMWARE_DIR/$BRCM_WIFI_FIRMWARE_BIN:/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_BIN" \
+                   --upload "$BRCM_WIFI_FIRMWARE_DIR/$BRCM_WIFI_FIRMWARE_TXT:/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_TXT" \
+                   --chmod "0644:/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_BIN" \
+                   --chmod "0644:/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_TXT"
+
+    # virt-customize doesn't do chowns (yet?)
+    guestfish -i -a "$OUT_IMAGE_TMP_PATH" chown 0 0 "/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_BIN"
+    guestfish -i -a "$OUT_IMAGE_TMP_PATH" chown 0 0 "/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_TXT"
+}
+
 function finalize() {
     echo "Finalizing..."
     mv "$OUT_IMAGE_TMP_PATH" "$OUT_IMAGE_PATH"
@@ -182,6 +203,9 @@ enable_serial0_getty
 disable_auditd
 disable_initial_setup
 set_root_password
+if [ "$RPI_MODEL" == "3" ]; then
+    install_wifi_firmware
+fi
 finalize
 
 echo

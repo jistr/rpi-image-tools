@@ -36,8 +36,25 @@ function download_os_image() {
     fi
 }
 
+function download_rpi3_wifi_firmware() {
+    if [ ! -e "$BRCM_WIFI_FIRMWARE_DIR/$BRCM_WIFI_FIRMWARE_BIN" ]; then
+        echo "Downloading $BRCM_WIFI_FIRMWARE_BIN..."
+        curl -L -o "$BRCM_WIFI_FIRMWARE_DIR/$BRCM_WIFI_FIRMWARE_BIN" "$BRCM_WIFI_FIRMWARE_BASE_URL/$BRCM_WIFI_FIRMWARE_BIN"
+    else
+        echo "$BRCM_WIFI_FIRMWARE_BIN is present."
+    fi
+
+    if [ ! -e "$BRCM_WIFI_FIRMWARE_DIR/$BRCM_WIFI_FIRMWARE_TXT" ]; then
+        echo "Downloading $BRCM_WIFI_FIRMWARE_TXT..."
+        curl -L -o "$BRCM_WIFI_FIRMWARE_DIR/$BRCM_WIFI_FIRMWARE_TXT" "$BRCM_WIFI_FIRMWARE_BASE_URL/$BRCM_WIFI_FIRMWARE_TXT"
+    else
+        echo "$BRCM_WIFI_FIRMWARE_TXT is present."
+    fi
+}
+
 init
 make_resource_and_output_dirs
 download_os_image
 download_firmware
+download_rpi3_wifi_firmware
 exit_success
