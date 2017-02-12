@@ -16,6 +16,3 @@ FIRMWARE_PATH="$SOURCE_DIR/firmware/firmware-$(basename -s .tar.gz "$FIRMWARE_PA
 BRCM_WIFI_FIRMWARE_DIR="$SOURCE_DIR/firmware-brcm-wifi"
 BRCM_WIFI_FIRMWARE_BIN="brcmfmac43430-sdio.bin"
 BRCM_WIFI_FIRMWARE_TXT="brcmfmac43430-sdio.txt"
-
-OUT_IMAGE_PATH="$OUTPUT_DIR/rpi-$(basename "$OS_IMAGE_PATH")"
-OUT_IMAGE_TMP_PATH="$OUT_IMAGE_PATH.unfinished"

@@ -68,6 +68,9 @@ function query_parameters() {
     if [ "$RPI_SWAP_SIZE" = "n" ]; then
         ROOT_PARTITION_NUM=2
     fi
+
+    OUT_IMAGE_PATH="$OUTPUT_DIR/rpi${RPI_MODEL}-$(basename "$OS_IMAGE_PATH")"
+    OUT_IMAGE_TMP_PATH="$OUT_IMAGE_PATH.unfinished"
 }
 
 function build_resized_image() {
@@ -184,7 +187,6 @@ function finalize() {
 
 init
 
-assert_build_preconditions
 
 echo
 echo "Filesystems and partitions in the original OS image:"
@@ -192,6 +194,8 @@ print_filesystems_and_partitions "$OS_IMAGE_PATH"
 print_partition_assumptions
 
 query_parameters
+assert_build_preconditions
+
 build_resized_image
 make_boot_vfat
 amend_fstab
