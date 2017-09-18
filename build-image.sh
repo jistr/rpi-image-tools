@@ -25,7 +25,7 @@ function print_filesystems_and_partitions() {
 }
 
 function print_partition_assumptions() {
-    echo -e "\nThis tool assumes sda1 = boot, sda2 = swap, sda3 = root fs\n"
+    echo -e "\nThis tool assumes sda2 = boot, sda3 = swap, sda4 = root fs\n"
 }
 
 function query_parameters() {
@@ -74,20 +74,21 @@ function query_parameters() {
 }
 
 function build_resized_image() {
-    local boot_part=( --resize "/dev/sda1=${RPI_BOOT_SIZE}M" )
-    local swap_part=( --resize "/dev/sda2=${RPI_SWAP_SIZE}M" )
+    local efi_part=( --delete /dev/sda1 )
+    local boot_part=( --resize "/dev/sda2=${RPI_BOOT_SIZE}M" )
+    local swap_part=( --resize "/dev/sda3=${RPI_SWAP_SIZE}M" )
     if [ "$RPI_SWAP_SIZE" = "n" ]; then
-        swap_part=( --delete /dev/sda2 )
+        swap_part=( --delete /dev/sda3 )
     fi
-    local root_part=( --resize "/dev/sda3=${RPI_ROOT_SIZE}M" )
+    local root_part=( --resize "/dev/sda4=${RPI_ROOT_SIZE}M" )
     if [ "$RPI_ROOT_SIZE" = "e" ]; then
-        root_part=( --expand /dev/sda3 )
+        root_part=( --expand /dev/sda4 )
     fi
 
     echo "Creating space for the new image..."
     truncate -s "${RPI_IMAGE_SIZE}M" "$OUT_IMAGE_TMP_PATH"
     echo "Copying the partitions into place..."
-    virt-resize "${boot_part[@]}" "${swap_part[@]}" "${root_part[@]}" "$OS_IMAGE_PATH" "$OUT_IMAGE_TMP_PATH"
+    virt-resize  "${efi_part[@]}" "${boot_part[@]}" "${swap_part[@]}" "${root_part[@]}" "$OS_IMAGE_PATH" "$OUT_IMAGE_TMP_PATH"
 }
 
 function make_boot_vfat() {

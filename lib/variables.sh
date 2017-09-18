@@ -1,7 +1,7 @@
 #!/bin/bash
 
-RPI_OS_IMAGE_URL=${RPI_OS_IMAGE_URL:-https://download.fedoraproject.org/pub/fedora/linux/releases/24/Spins/armhfp/images/Fedora-Minimal-armhfp-24-1.2-sda.raw.xz}
-RPI_FIRMWARE_URL=${RPI_FIRMWARE_URL:-https://github.com/raspberrypi/firmware/archive/b8ef00fa489792d9c29071669c775947bcc29e0c.tar.gz}
+RPI_OS_IMAGE_URL=${RPI_OS_IMAGE_URL:-https://download.fedoraproject.org/pub/fedora/linux/releases/26/Spins/armhfp/images/Fedora-Minimal-armhfp-26-1.5-sda.raw.xz}
+RPI_FIRMWARE_URL=${RPI_FIRMWARE_URL:-https://github.com/raspberrypi/firmware/archive/eb04fcf96b9ff37d00919ce4e1999f802ed8976f.tar.gz}
 BRCM_WIFI_FIRMWARE_BASE_URL=${BRCM_WIFI_FIRMWARE_BASE_URL:-https://raw.githubusercontent.com/RPi-Distro/firmware-nonfree/master/brcm80211/brcm}
 
 SOURCE_DIR=rpi-image-sources
