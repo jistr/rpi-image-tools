@@ -21,6 +21,7 @@ function exit_error() {
 function make_resource_and_output_dirs() {
     local dirs=(
         "$SOURCE_DIR"
+        "$SOURCE_DIR/firmware"
         "$SOURCE_DIR/os"
         "$BRCM_WIFI_FIRMWARE_DIR"
         "$OUTPUT_DIR"
