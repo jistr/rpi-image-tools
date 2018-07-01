@@ -64,9 +64,9 @@ function query_parameters() {
         read -s RPI_ROOT_PASSWORD
     fi
 
-    ROOT_PARTITION_NUM=3
+    ROOT_PARTITION_NUM=4
     if [ "$RPI_SWAP_SIZE" = "n" ]; then
-        ROOT_PARTITION_NUM=2
+        ROOT_PARTITION_NUM=3
     fi
 
     OUT_IMAGE_PATH="$OUTPUT_DIR/rpi${RPI_MODEL}-$(basename "$OS_IMAGE_PATH")"
@@ -74,7 +74,6 @@ function query_parameters() {
 }
 
 function build_resized_image() {
-    local efi_part=( --delete /dev/sda1 )
     local boot_part=( --resize "/dev/sda2=${RPI_BOOT_SIZE}M" )
     local swap_part=( --resize "/dev/sda3=${RPI_SWAP_SIZE}M" )
     if [ "$RPI_SWAP_SIZE" = "n" ]; then
@@ -88,63 +87,35 @@ function build_resized_image() {
     echo "Creating space for the new image..."
     truncate -s "${RPI_IMAGE_SIZE}M" "$OUT_IMAGE_TMP_PATH"
     echo "Copying the partitions into place..."
-    virt-resize  "${efi_part[@]}" "${boot_part[@]}" "${swap_part[@]}" "${root_part[@]}" "$OS_IMAGE_PATH" "$OUT_IMAGE_TMP_PATH"
-}
-
-function make_boot_vfat() {
-    echo "Formatting boot as vfat..."
-    OLD_BOOT_FS_UUID=$(virt-filesystems -a "$OUT_IMAGE_TMP_PATH" -l --uuid | grep /dev/sda1 | awk '{ print $7 }')
-
-    guestfish -a "$OUT_IMAGE_TMP_PATH" run : mkfs vfat /dev/sda1 : part-set-mbr-id /dev/sda 1 0x0b
-
-    BOOT_FS_UUID=$(virt-filesystems -a "$OUT_IMAGE_TMP_PATH" -l --uuid | grep /dev/sda1 | awk '{ print $7 }')
+    virt-resize  "${boot_part[@]}" "${swap_part[@]}" "${root_part[@]}" "$OS_IMAGE_PATH" "$OUT_IMAGE_TMP_PATH"
 }
 
 function amend_fstab() {
-    echo "Amending boot partition UUID in fstab..."
-    virt-edit -a "$OUT_IMAGE_TMP_PATH" /etc/fstab -e "s/$OLD_BOOT_FS_UUID/$BOOT_FS_UUID/" 2>&1 | sed -e 's/.*libguestfs: error: findfs_uuid.*//'
-
-    echo "Amending boot partition type in fstab..."
-    virt-edit -a "$OUT_IMAGE_TMP_PATH" /etc/fstab -e 's/(\/boot\s*)ext4/\1vfat/' 2>&1 | sed -e 's/.*libguestfs: error: findfs_uuid.*//'
-
     if [ "$RPI_SWAP_SIZE" = "n" ]; then
         echo "Removing swap from fstab..."
-        virt-edit -a "$OUT_IMAGE_TMP_PATH" /etc/fstab -e 's/^.*swap.*swap.*$//' 2>&1 | sed -e 's/.*libguestfs: error: findfs_uuid.*//'
+        virt-edit -m "/dev/sda${ROOT_PARTITION_NUM}":/ "$OUT_IMAGE_TMP_PATH" /etc/fstab -e 's/^.*swap.*swap.*$//' 2>&1
     fi
 }
 
 function set_fs_labels() {
     echo "Setting filesystem labels..."
-    guestfish -a "$OUT_IMAGE_TMP_PATH" run : set-label /dev/sda1 rpiboot : set-label /dev/sda${ROOT_PARTITION_NUM} rpiroot
-}
-
-function install_firmware() {
-    echo "Installing kernel and boot files..."
-    local boot_files=( $(ls "$FIRMWARE_PATH/boot") )
-    boot_files=( "${boot_files[@]/#/$FIRMWARE_PATH\/boot\/}" )
-    virt-copy-in -a "$OUT_IMAGE_TMP_PATH" "${boot_files[@]}" /boot
-
-    echo "Installing kernel modules..."
-    local modules_files=( $(ls "$FIRMWARE_PATH/modules") )
-    modules_files=( "${modules_files[@]/#/$FIRMWARE_PATH\/modules\/}" )
-    virt-copy-in -a "$OUT_IMAGE_TMP_PATH" "${modules_files[@]}" /lib/modules
+    guestfish -a "$OUT_IMAGE_TMP_PATH" run : set-label /dev/sda2 rpiboot : set-label /dev/sda${ROOT_PARTITION_NUM} rpiroot
 }
 
 function configure_boot() {
-    echo "Writing /boot/cmdline.txt and /boot/config.txt (use virt-edit to customize later)..."
+    echo "Amending /boot/extlinux/extlinux.conf and VFAT config.txt (use virt-edit to customize later)..."
 
-    virt-customize -a "$OUT_IMAGE_TMP_PATH" \
-                   --write "/boot/cmdline.txt:dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/mmcblk0p${ROOT_PARTITION_NUM} rootfstype=ext4 elevator=deadline rootwait" \
-                   --write '/boot/config.txt:enable_uart=1
-disable_overscan=1
-hdmi_force_hotplug=1
-hdmi_group=1
-hdmi_mode=16'
-}
+    virt-cat -m /dev/sda1:/ "$OUT_IMAGE_TMP_PATH" /config.txt > "$OUTPUT_DIR/config.txt"
+    virt-copy-out -a "$OUT_IMAGE_TMP_PATH" /boot/extlinux/extlinux.conf "$OUTPUT_DIR"
 
-function make_bootable() {
-    echo "Making /dev/sda1 bootable..."
-    guestfish -a "$OUT_IMAGE_TMP_PATH" run : part-set-bootable /dev/sda 1 true
+    echo 'enable_uart=1' >> "$OUTPUT_DIR/config.txt"
+    sed -i -e 's/append ro/append ro dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline rootwait/' "$OUTPUT_DIR/extlinux.conf"
+
+    guestfish -a "$OUT_IMAGE_TMP_PATH" -m /dev/sda1:/ copy-in "$OUTPUT_DIR/config.txt" /
+    virt-copy-in -a "$OUT_IMAGE_TMP_PATH" "$OUTPUT_DIR/extlinux.conf" /boot/extlinux
+
+    rm "$OUTPUT_DIR/config.txt"
+    rm "$OUTPUT_DIR/extlinux.conf"
 }
 
 function enable_serial0_getty() {
@@ -171,14 +142,24 @@ function set_root_password() {
 function install_wifi_firmware() {
     echo "Installing WiFi firmware..."
     virt-customize -a "$OUT_IMAGE_TMP_PATH" \
-                   --upload "$BRCM_WIFI_FIRMWARE_DIR/$BRCM_WIFI_FIRMWARE_BIN:/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_BIN" \
                    --upload "$BRCM_WIFI_FIRMWARE_DIR/$BRCM_WIFI_FIRMWARE_TXT:/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_TXT" \
-                   --chmod "0644:/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_BIN" \
-                   --chmod "0644:/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_TXT"
+                   --upload "$BRCM_WIFI_FIRMWARE_DIR/$BRCM_WIFI_FIRMWARE_TXT_2:/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_TXT_2" \
+                   --upload "$BRCM_WIFI_FIRMWARE_DIR/$BRCM_WIFI_FIRMWARE_CLM_2:/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_CLM_2" \
+                   --chmod "0644:/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_TXT" \
+                   --chmod "0644:/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_TXT_2" \
+                   --chmod "0644:/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_CLM_2" \
+
+                   # --upload "$BRCM_WIFI_FIRMWARE_DIR/$BRCM_WIFI_FIRMWARE_BIN:/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_BIN" \
+                   # --upload "$BRCM_WIFI_FIRMWARE_DIR/$BRCM_WIFI_FIRMWARE_BIN_2:/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_BIN_2" \
+                   # --chmod "0644:/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_BIN" \
+                   # --chmod "0644:/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_BIN_2" \
 
     # virt-customize doesn't do chowns (yet?)
-    guestfish -i -a "$OUT_IMAGE_TMP_PATH" chown 0 0 "/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_BIN"
+    # guestfish -i -a "$OUT_IMAGE_TMP_PATH" chown 0 0 "/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_BIN"
+    # guestfish -i -a "$OUT_IMAGE_TMP_PATH" chown 0 0 "/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_BIN_2"
     guestfish -i -a "$OUT_IMAGE_TMP_PATH" chown 0 0 "/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_TXT"
+    guestfish -i -a "$OUT_IMAGE_TMP_PATH" chown 0 0 "/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_TXT_2"
+    guestfish -i -a "$OUT_IMAGE_TMP_PATH" chown 0 0 "/lib/firmware/brcm/$BRCM_WIFI_FIRMWARE_CLM_2"
 }
 
 function finalize() {
@@ -198,12 +179,9 @@ query_parameters
 assert_build_preconditions
 
 build_resized_image
-make_boot_vfat
 amend_fstab
 set_fs_labels
-install_firmware
 configure_boot
-make_bootable
 enable_serial0_getty
 disable_auditd
 disable_initial_setup
